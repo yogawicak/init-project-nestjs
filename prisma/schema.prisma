@@ -1,0 +1,201 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model user_consumer {
+  id                      String                   @id @default(uuid()) @db.VarChar(255)
+  fullname                String?                  @db.VarChar(255)
+  email                   String                   @unique @db.VarChar(255)
+  temp_new_email          String?                  @db.VarChar(255)
+  password                String?                  @db.VarChar(255) // encrypted password
+  new_password            String?                  @db.VarChar(255) // using for check new password  
+  is_verif_email          Boolean                  @default(false) @db.Boolean
+  is_bind_google          Boolean                  @default(false) @db.Boolean
+  gender                  Gender?
+  phone_number            String?                  @db.VarChar(255)
+  birthday_date           DateTime?                @db.Date()
+  profile_photo           String? //url photo profile
+  created_at              DateTime                 @default(now())
+  updated_at              DateTime                 @updatedAt
+  google_account_consumer google_account_consumer? @relation("FK__user_consumer__google_account_consumer")
+  favourite_property      favourite_property[]     @relation("FK__favourite_property__user_consumer")
+}
+
+model google_account_consumer {
+  user_consumer_id       String        @id
+  is_google_verify_email Boolean       @db.Boolean
+  google_user_id         String        @db.VarChar(255)
+  google_profile_photo   String        @db.Text
+  google_profile_name    String        @db.Text
+  user_consumer          user_consumer @relation("FK__user_consumer__google_account_consumer", fields: [user_consumer_id], references: [id])
+}
+
+model banner {
+  id              String         @id @default(uuid()) @db.VarChar(255)
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+  banner_status   Boolean        @db.Boolean
+  banner_category BannerCategory
+  banner_name     String         @db.VarChar(255)
+  banner_image    String         @db.Text
+}
+
+model help_center {
+  id         String   @id @default(uuid()) @db.VarChar(255)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  title      String   @db.VarChar(255)
+  sub_title  String   @db.VarChar(255)
+  tutorial   String   @db.VarChar(255)
+}
+
+model property {
+  id                 String   @id @default(uuid()) @db.Uuid
+  property_name      String   @db.VarChar(255)
+  star_rating        Int      @db.SmallInt
+  channel_manager_id Int      @db.Integer()
+  description        String   @db.VarChar()
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+  total_rooms        Int      @db.Integer()
+  checkin_time       DateTime @db.Time()
+  checkout_time      DateTime @db.Time()
+
+  facilities               String                  @db.Text() // json
+  property_channel_manager channel_manager         @relation("FK__property__channel_manager", fields: [channel_manager_id], references: [code])
+  favourite_property       favourite_property[]    @relation("FK__favourite_property__property")
+  property_addresss        addressess?             @relation("FK__property__addresses_property", fields: [property_address_id], references: [id])
+  property_address_id      String?                 @unique @db.Uuid
+  propertyId               String?                 @db.Uuid
+  property_photo           property_photo[]        @relation("FK__property__property_photo")
+  cancellation_policies    cancellation_policies[] @relation("FK__property__cancellation_policies")
+}
+
+model property_photo {
+  id          String   @id @default(uuid()) @db.Uuid
+  type        String   @db.VarChar()
+  image_url   String   @db.VarChar()
+  property_id String   @db.Uuid
+  property    property @relation("FK__property__property_photo", fields: [property_id], references: [id])
+}
+
+model cancellation_policies {
+  id                   String   @id @default(uuid()) @db.Uuid
+  property_id          String   @db.Uuid
+  is_free_cancellation Boolean? @db.Boolean
+  is_non_refundable    Boolean? @db.Boolean
+  title                String   @db.VarChar()
+  summary              String   @db.VarChar()
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+  property             property @relation("FK__property__cancellation_policies", fields: [property_id], references: [id])
+}
+
+model room {
+  id              String           @id @default(uuid()) @db.Uuid
+  room_size_value Int              @db.Integer
+  room_size_unit  String           @db.VarChar()
+  bed_type        String           @db.VarChar()
+  room_facilities String           @db.Text() //json 
+  room_occupancy  room_occupancy[] @relation("FK__room__room_occupancy")
+  availabilities  availabilities[] @relation("FK__room__availabilities")
+}
+
+model room_occupancy {
+  id                     String @id @default(uuid()) @db.Uuid
+  standard               Int    @db.Integer()
+  max                    Int    @db.Integer()
+  max_number_of_adults   Int    @db.Integer()
+  max_number_of_children Int    @db.Integer()
+  max_age_of_children    Int    @db.Integer()
+  room_id                String @db.Uuid
+  property               room   @relation("FK__room__room_occupancy", fields: [room_id], references: [id])
+}
+
+model rate_categories {
+  id String @id @default(uuid()) @db.Uuid
+
+}
+
+model availabilities {
+  id                  String   @id @default(uuid()) @db.Uuid
+  date                DateTime @db.Timestamptz()
+  rooms_to_sell       Int      @db.Integer
+  room_id             String   @db.Uuid
+  room_availabilities room     @relation("FK__room__availabilities", fields: [room_id], references: [id])
+}
+
+// model rate {}
+
+model addressess {
+  id            String    @id @default(uuid()) @db.Uuid
+  property_id   String    @db.Uuid
+  state         String
+  postal_code   Int
+  city_name     String
+  country       String
+  // country_id    Int?     @db.Integer
+  country_code  String?   @db.VarChar(255)
+  place_id      String?
+  address_line1 String    @db.Text
+  address_line2 String?   @db.Text
+  latitude      Decimal   @db.Decimal(20, 6)
+  longitude     Decimal   @db.Decimal(20, 6)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  property      property? @relation("FK__property__addresses_property")
+}
+
+model channel_manager {
+  code     Int        @unique @db.Integer()
+  name     String     @db.VarChar(255)
+  property property[] @relation("FK__property__channel_manager")
+}
+
+model favourite_property {
+  id               String        @id @default(uuid()) @db.VarChar(255)
+  property_id      String        @db.Uuid
+  user_consumer_id String        @db.VarChar(255)
+  created_at       DateTime      @default(now())
+  property         property      @relation("FK__favourite_property__property", fields: [property_id], references: [id])
+  user_consumer    user_consumer @relation("FK__favourite_property__user_consumer", fields: [user_consumer_id], references: [id])
+}
+
+model user_admin {
+  id       String @id @default(uuid()) @db.VarChar(255)
+  email    String @db.VarChar(255)
+  password String @db.VarChar(255) // encrypted password
+}
+
+model notification_history {
+  id      String @id @default(uuid()) @db.VarChar(255)
+  title   String @db.VarChar(255)
+  message String @db.VarChar(255)
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum ReservationStatus {
+  PENGEMBALIAN
+  MENUNGGU_DIBAYAR
+  SUDAH_DIBAYAR
+}
+
+enum BannerCategory {
+  EXPLORE
+  PROMO
+  BANNER_INFORMATION
+  POP_UP_PROMO
+  SPLASH_SCREEN
+}
